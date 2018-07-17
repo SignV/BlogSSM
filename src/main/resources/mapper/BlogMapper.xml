@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- mapper实现的接口的路径(包名+接口名)-->
+<mapper namespace="ssm.blog.dao.BlogDao">
+    <!-- 返回结果映射 type使用mybatis-conf中的别名 可以省略包名-->
+    <resultMap id="BlogResult" type="Blog">
+        <!-- id主键字段映射-->
+        <id property="id" column="id"/>
+        <!-- 普通属性映射-->
+        <result property="title" column="title"/>
+        <result property="summary" column="summary"/>
+        <result property="releaseDate" column="releaseDate"/>
+        <result property="clickHit" column="clickHit"/>
+        <result property="replyHit" column="replyHit"/>
+        <result property="content" column="content"/>
+        <result property="keyWord" column="keyWord"/>
+        <association property="blogType" column="type_id" select="ssm.blog.dao.BlogTypeDao.getById"></association>
+    </resultMap>
+    <!-- id为具体实现接口中的方法名-->
+    <select id="listBlog" parameterType="Map" resultMap="BlogResult">
+        SELECT * FROM t_blog
+        <where>
+            <if test="title!=null and title!=''">
+                AND title LIKE "%"#{title}"%"
+            </if>
+            <if test="typeId!=null and typeId!=''">
+                AND type_id=#{typeId}
+            </if>
+            <if test="releaseDateStr!=null and releaseDateStr!=''">
+                AND DATE_FORMAT(releaseDate,'%Y年%m月')=#{releaseDateStr}
+            </if>
+        </where>
+        ORDER BY releaseDate DESC
+        <if test="start!=null and pageSize!=null">
+            LIMIT #{start},#{pageSize}
+        </if>
+    </select>
+
+    <select id="getTotal" parameterType="Map" resultType="Long">
+        SELECT COUNT(*) FROM t_blog
+        <where>
+            <if test="title!=null and title!=''">
+                AND title LIKE "%"#{title}"%"
+            </if>
+            <if test="typeId!=null and typeId!=''">
+                AND type_id=#{typeId}
+            </if>
+            <if test="releaseDateStr!=null and releaseDateStr!=''">
+                AND DATE_FORMAT(releaseDate,'%Y年%m月')=#{releaseDateStr}
+            </if>
+        </where>
+    </select>
+
+    <select id="getBlogByTypeId" parameterType="Integer" resultType="Integer">
+        SELECT COUNT(*) FROM t_blog WHERE type_id=#{typeId}
+    </select>
+
+    <insert id="saveBlog" parameterType="Blog" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO t_blog VALUES(NULL ,#{title},#{summary},now(),0,0,#{content},#{keyWord},#{blogType.id})
+    </insert>
+
+    <update id="updateBlog" parameterType="Blog">
+        UPDATE t_blog
+        <set>
+            <if test="title!=null and title!=''">
+                title=#{title},
+            </if>
+            <if test="summary!=null and summary!=''">
+                summary=#{summary},
+            </if>
+            <if test="content!=null and content!=''">
+                content=#{content},
+            </if>
+            <if test="blogType.id!=null">
+                type_id=#{blogType.id},
+            </if>
+            <if test="clickHit!=null">
+                clickHit=#{clickHit},
+            </if>
+            <if test="replyHit!=null">
+                replyHit=#{replyHit},
+            </if>
+            <if test="keyWord!=null and keyWord!=''">
+                keyWord=#{keyWord},
+            </if>
+        </set>
+        where id=#{id}
+    </update>
+
+    <delete id="deleteBlog" parameterType="java.lang.Integer">
+        DELETE FROM t_blog WHERE id=#{id}
+    </delete>
+
+    <select id="getById" parameterType="java.lang.Integer" resultMap="BlogResult">
+        SELECT * FROM t_blog WHERE id=#{id}
+    </select>
+    <!--根据博客类型查询出博客信息-->
+    <select id="getBlogInfoByTypeId" parameterType="Integer" resultMap="BlogResult">
+        SELECT * FROM t_blog WHERE type_id = #{typeId}
+    </select>
+    <!--获取全部博客按照发表日期降序-->
+    <select id="getAllBlog" resultMap="BlogResult">
+        SELECT * FROM t_blog ORDER BY releaseDate DESC
+    </select>
+    <!--根据关键字查询博客-->
+    <select id="getBlogByKey" parameterType="String" resultMap="BlogResult">
+        SELECT * FROM t_blog WHERE title LIKE CONCAT(CONCAT('%', #{searchKey}), '%') OR summary LIKE CONCAT(CONCAT('%', #{searchKey}), '%') OR content LIKE CONCAT(CONCAT('%', #{searchKey}), '%') OR keyWord LIKE CONCAT(CONCAT('%', #{searchKey}), '%')
+    </select>
+</mapper>
